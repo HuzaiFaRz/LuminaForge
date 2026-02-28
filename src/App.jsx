@@ -264,6 +264,7 @@ const App = () => {
             Lumina Forge
           </h1>
         </nav>
+
         <div className="bg-Dark-1 border border-l-0 border-Light-1 w-full h-40 min-h-max flex flex-wrap justify-evenly items-center p-3">
           <label
             htmlFor="Select_Image"
@@ -321,7 +322,7 @@ const App = () => {
         </div>
         <div className="flex flex-col md:flex-row h-full bg-Dark-1 items-start justify-between p-3 gap-5 relative">
           <FaDownload
-            className="absolute top-10 right-1 cursor-pointer"
+            className="absolute top-10 left-1/2 -translate-x-1/2 cursor-pointer"
             color="green"
             size={30}
             onClick={downloadImage}
