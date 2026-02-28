@@ -322,7 +322,7 @@ const App = () => {
         </div>
         <div className="flex flex-col md:flex-row h-full bg-Dark-1 items-start justify-between p-3 gap-5 relative">
           <FaDownload
-            className="absolute top-10 left-1/2 -translate-x-1/2 cursor-pointer"
+            className="absolute top-20 sm:top-10 left-1/2 -translate-x-1/2 cursor-pointer z-10"
             color="green"
             size={30}
             onClick={downloadImage}
