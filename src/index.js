@@ -52,31 +52,22 @@ const editorsTools = [
     toolValueUnit: "%",
     toolValue: { min: 0, max: 100, defaultValue: 100 },
   },
+];
 
+const otherTools = [
   {
     toolName: "rotate",
     toolValueUnit: "deg",
-    toolValue: { min: 1, max: 360, defaultValue: 0 },
+    toolValue: { min: 0, max: 360, defaultValue: 90 },
   },
-
   {
     toolName: "zoom",
-    toolValueUnit: "%",
-    toolValue: { min: 100, max: 500, defaultValue: 100 },
+    toolValueUnit: "",
+    toolValue: { min: 1, max: 5, defaultValue: 1 },
   },
-
-  // {
-  //   toolName: "objectPosition",
-  //   toolValueUnit: "px",
-  //   // topPostions: [, "bottom", "right", "left"],
-  //   Postions: {
-  //     top: { min: 0, max: 300 },
-  //     bottom: { min: 0, max: 300 },
-  //   },
-  // },
 ];
 
-const Button_Style = `p-4 shadow-2xl shadow-black/90 bg-Light-2 text-Dark-1 text-xl sm:text-2xl rounded-xl flex justify-center items-center gap-2 cursor-pointer relative`;
+const Button_Style = `py-3 px-6 shadow-2xl shadow-black/90 bg-Light-2 text-Dark-1 text-lg md:text-xl lg:text-2xl rounded-xl flex justify-center items-center gap-2 cursor-pointer relative capitalize`;
 
 let Image_URL_Regex = /(https?:\/\/.*\.(?:png|jpe?g|gif|webp)(?:\?.*)?)/i;
 
@@ -106,4 +97,10 @@ let Image_Extension = [
   "dng",
 ];
 
-export { editorsTools, Button_Style, Image_URL_Regex, Image_Extension };
+export {
+  editorsTools,
+  Button_Style,
+  Image_URL_Regex,
+  Image_Extension,
+  otherTools,
+};

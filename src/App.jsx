@@ -1,23 +1,26 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import logo from "./assets/Images/Logo.png";
-import {
-  Button_Style,
-  editorsTools,
-  Image_Extension,
-  Image_URL_Regex,
-} from ".";
-import { CiImageOn } from "react-icons/ci";
-import { FaImage } from "react-icons/fa";
+import { Button_Style, editorsTools, Image_Extension, otherTools } from ".";
+import { FaDownload, FaRedo, FaUndo } from "react-icons/fa";
 import { BiImageAdd } from "react-icons/bi";
+import { TbRotate360 } from "react-icons/tb";
+import {
+  // MdOutlineCloudUpload,
+  MdOutlineZoomInMap,
+  MdOutlineZoomOutMap,
+} from "react-icons/md";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 const App = () => {
-  const imageRef = useRef(null);
-
   const canvasRef = useRef(null);
+
+  // eslint-disable-next-line no-unused-vars
+  const [loading, setLoading] = useState(false);
 
   const editToolsRanges = useRef([]);
 
-  let [rotate, setRotate] = useState(90);
+  let [rotate, setRotate] = useState(0);
+
+  let [zoom, setZoom] = useState(1);
 
   let defaultRanges = editorsTools.reduce((acc, tool) => {
     acc[tool.toolName] = tool.toolValue.defaultValue;
@@ -30,74 +33,56 @@ const App = () => {
     future: [],
   });
 
-  const imageGrapping = (event) => {
-    let x = event.clientX;
-    let y = event.clientY;
-    canvasRef.current.style.objectPosition = `${x}px ${y}px`;
-  };
-
   const [editImage, setEditImage] = useState({
     selectedImage: undefined,
     pastedURL: undefined,
   });
 
-  const imageLoader = (URL) => {
-    // if (!canvasRef.current || !imageRef.current) {
-    //   return;
-    // }
-
-    // const ctx = canvasRef.current.getContext("2d");
-
-    imageRef.current.setAttribute("src", URL);
-    console.log(imageRef.current);
-
-    // ctx.drawImage(imageRef.current, 10, 10);
-  };
-
   useEffect(() => {
-    if (
-      !canvasRef.current ||
-      !imageRef.current ||
-      !editImage.pastedURL ||
-      !editImage.selectedImage
-    ) {
-      return;
-    }
+    const canvas = canvasRef.current;
+    canvas.width = 900;
+    canvas.height = 700;
+  }, []);
 
-    let canvas = canvasRef.current;
-
-    let filterArray = [];
-
-    const ctx = canvasRef.current.getContext("2d");
-
-    Object.entries(edit.present).forEach(([key, value], index) => {
-      const tool = editorsTools[index];
-      if (!tool) return;
-      if (tool.toolName === "rotate") {
-        canvas.style.rotate = `${value}${tool.toolValueUnit}`;
-      } else if (tool.toolName === "zoom") {
-        canvas.style.transform = `scale(${value}${tool.toolValueUnit})`;
-        if (value > 100) {
-          canvas.style.cursor = "all-scroll";
-          canvas.addEventListener("mousemove", imageGrapping);
-        } else {
-          canvas.removeEventListener("mousemove", imageGrapping);
-        }
-      } else {
+  const drawImage = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.src = editImage.pastedURL || editImage.selectedImage;
+    image.addEventListener("load", () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((rotate * Math.PI) / 180);
+      ctx.scale(zoom, zoom);
+      let filterArray = [];
+      Object.entries(edit.present).forEach(([key, value], index) => {
+        const tool = editorsTools[index];
+        if (!tool) return;
         filterArray.push(`${key}(${value}${tool?.toolValueUnit})`);
-        ctx.filter = filterArray.join(" ");
-      }
+      });
+      ctx.filter = filterArray.join(" ");
+      ctx.drawImage(
+        image,
+        -canvas.width / 2,
+        -canvas.height / 2,
+        canvas.width,
+        canvas.height,
+      );
+      ctx.restore();
     });
-
-    if (!editToolsRanges.current.length) {
-      return;
-    }
 
     Object.entries(edit.present).filter(([key, value]) => {
       const toolIndex = editorsTools.findIndex((tool) => tool.toolName === key);
       editToolsRanges.current[toolIndex].value = value;
     });
-  }, [edit, editImage]);
+  };
+
+  useEffect(() => {
+    if (!editImage.pastedURL && !editImage.selectedImage) return;
+    drawImage();
+  }, [edit, editImage, zoom, rotate]);
 
   let editHandler = {
     edit: function () {
@@ -122,10 +107,10 @@ const App = () => {
     undo: function () {
       setEdit((prev) => {
         if (!prev.past.length) return prev;
-        let copy = prev.past.at(-1);
+        let previous = prev.past[prev.past.length - 1];
         return {
-          past: prev.past.slice(0, 1),
-          present: copy,
+          past: prev.past.slice(0, -1),
+          present: previous,
           future: [prev.present, ...prev.future],
         };
       });
@@ -133,10 +118,10 @@ const App = () => {
     redo: function () {
       setEdit((prev) => {
         if (!prev.future.length) return prev;
-        let copy = edit.future[0];
+        let next = prev.future[0];
         return {
           past: [...prev.past, prev.present],
-          present: copy,
+          present: next,
           future: prev.future.slice(1),
         };
       });
@@ -154,39 +139,75 @@ const App = () => {
 
   const currentFileStatusRef = useRef(null);
 
+  const restoreDefault = () => {
+    setZoom(1);
+    setRotate(0);
+    setEdit((prev) => ({
+      ...prev,
+      past: [],
+      present: defaultRanges,
+      future: [],
+    }));
+  };
+
   const handlingSelectedImage = (event) => {
-    // if (editImage.pastedURL) {
-    //   console.log(editImage);
-    //   console.log("image already pasted");
-    //   return;
-    // }
-
-    // if (!currentFileStatusRef.current && !inputFileRef.current) {
-    //   console.log("input not found");
-    //   return;
-    // }
-
+    restoreDefault();
     let value = event.target.files[0];
-    console.log(value);
-
     let Image_Extension_Verify = Image_Extension.map((e) => {
       return value?.name.endsWith(`.${e}`);
     }).some((e) => e === true);
-
     if (!Image_Extension_Verify || !value.type.includes("image")) {
       console.log("Invalid Extension");
       return;
     }
-
     const temporaryUrl = URL.createObjectURL(value);
     setEditImage(() => {
-      imageLoader(temporaryUrl);
       return {
-        selectedImage: value,
+        selectedImage: temporaryUrl,
         pastedURL: undefined,
       };
     });
   };
+
+  const handlingURLImageInput = (event) => {
+    restoreDefault();
+    let value = event.target.value;
+    if (
+      !value ||
+      /\s{2,}/.test(value) ||
+      value.startsWith(" ") ||
+      !value.startsWith("https://")
+    ) {
+      console.log("Invalid URL");
+      return;
+    }
+    setEditImage(() => ({
+      selectedImage: undefined,
+      pastedURL: value,
+    }));
+  };
+
+  // const handlingURLImage = async () => {
+  //   restoreDefault();
+  //   try {
+  //     const response = await fetch(URL, { method: "HEAD" });
+  //     const contentType = response.headers.get("content-type");
+  //     if (!response.ok) {
+  //       console.log(response);
+  //       return;
+  //     }
+  //     if (contentType || contentType.startsWith("image/")) {
+  //       setEditImage(() => ({
+  //         selectedImage: undefined,
+  //         pastedURL: editImage.pastedURL,
+  //       }));
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     console.error("Fetch error:", error);
+  //     return false;
+  //   }
+  // };
 
   useEffect(() => {
     if (!currentFileStatusRef.current && !inputFileRef.current) {
@@ -200,48 +221,44 @@ const App = () => {
         : "Nothing Selected";
   }, [editImage]);
 
-  const handlingURLImage = async (event) => {
-    // if (editImage.selectedImage) {
-    //   console.log("image already Selected");
-    //   return;
-    // }
+  let ifImageSelected =
+    editImage.pastedURL || editImage.selectedImage ? false : true;
 
-    let value = event.target.value;
-
-    if (!value || !value.startsWith("https://")) {
-      console.log("Invalid URL");
-      return;
-    }
-
-    // if (!canvasRef.current || !imageRef.current) {
-    //   return;
-    // }
-
-    try {
-      const response = await fetch(URL, { method: "HEAD" });
-      const contentType = response.headers.get("content-type");
-      if (!response.ok) {
-        console.log(response);
+  const otherToolsHandler = (max, defaultValue, toolValueUnit) => {
+    if (toolValueUnit === "deg") {
+      setRotate((prev) => prev + 90);
+      if (rotate >= max) {
+        setRotate(defaultValue);
         return;
       }
-      if (contentType || contentType.startsWith("image/")) {
-        setEditImage(() => ({
-          selectedImage: undefined,
-          pastedURL: value,
-        }));
-        imageLoader(value);
-        event.target.value = null;
+    } else {
+      setZoom((prev) => prev + 1);
+      if (zoom >= max) {
+        canvasRef.current.style.cursor = `zoom-out`;
+        setZoom(defaultValue);
         return;
       }
-    } catch (error) {
-      console.error("Fetch error:", error);
-      return false;
     }
+  };
+
+  const downloadImage = () => {
+    if (!editImage.pastedURL && !editImage.selectedImage) return;
+    const canvas = canvasRef.current;
+    const link = document.createElement("a");
+    link.download = `Lumina-Forge.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
     <Fragment>
-      <main className="w-full h-dvh bg-Dark-BG font-Allenoire-Font bg-Dark-2">
+      <main className="w-full h-full bg-Dark-BG font-Allenoire-Font bg-Dark-2">
+        {loading && (
+          <div className="w-full fixed bg-black/50 z-10 h-screen flex justify-center items-center text-3xl text-Light-2">
+            Loading..
+          </div>
+        )}
+
         <nav className="w-full h-37.5 p-3 text-center bg-Dark-1 shadow-2xl">
           <h1 className="font-bold bg-linear-to-r from-Dark-1 to-Light-2 text-transparent bg-clip-text text-6xl md:text-9xl">
             Lumina Forge
@@ -250,17 +267,18 @@ const App = () => {
         <div className="bg-Dark-1 border border-l-0 border-Light-1 w-full h-40 min-h-max flex flex-wrap justify-evenly items-center p-3">
           <label
             htmlFor="Select_Image"
-            className="flex flex-col justify-around items-start h-full w-full sm:w-auto"
+            className="flex flex-col justify-around items-center h-full w-full sm:w-auto p-2"
             onClick={inputFileClicker}
           >
-            <button className={Button_Style}>
+            <button className={Button_Style} disabled={loading}>
               <span>Select Image</span>
               <BiImageAdd size={30} />
             </button>
             <input
               type="file"
               required
-              // accept="image/*"
+              disabled={loading}
+              accept="image/*"
               multiple={false}
               id="Select_Image"
               ref={inputFileRef}
@@ -284,74 +302,129 @@ const App = () => {
               type="url"
               id="Paste_URL"
               placeholder="Paste_URL"
-              onChange={handlingURLImage}
+              onChange={handlingURLImageInput}
               className="text-Light-1 tracking-wider text-lg border p-2 min-w-75 w-full"
             />
           </label>
+          {/* <button
+            className={Button_Style}
+            onClick={handlingURLImage}
+            disabled={loading}
+          >
+            Upload
+            {loading ? (
+              <AiOutlineLoading3Quarters size={20} className="animate-spin" />
+            ) : (
+              <MdOutlineCloudUpload size={20} />
+            )}
+          </button> */}
         </div>
-        <div className="flex w-full h-full bg-Dark-1">
-          {/* <canvas ref={canvasRef} className="h-full w-175 object-contain"> */}
-          <img
-            ref={imageRef}
-            className="h-full w-full object-cover text-xl font-mono p-2"
-            alt="Image"
+        <div className="flex flex-col md:flex-row h-full bg-Dark-1 items-start justify-between p-3 gap-5 relative">
+          <FaDownload
+            className="absolute top-10 right-1 cursor-pointer"
+            color="green"
+            size={30}
+            onClick={downloadImage}
           />
-          {/* </canvas> */}
-        </div>
-      </main>
-
-      {/* <Container fluid className="bg-dark text-light h-100">
-        <Row>
-          <Col>
-            <canvas ref={canvasRef} className="w-100 h-50 border">
-              <Image thumbnail ref={imageRef} />
-            </canvas>
-          </Col>
-          <Col className="">
-            <Button onClick={editHandler.undo}>Undo</Button>
-            <Button onClick={editHandler.redo}>Redo</Button>
-
-            {editorsTools.map((elem, index) => {
-              const { toolName, toolValue } = elem;
-              const { min, max, defaultValue } = toolValue;
-              return (
-                <React.Fragment key={index}>
-                  <Form.Label>
-                    {toolName.replace(/[^a-zA-Z0-9\s]/g, " ")}
-                  </Form.Label>
-                  <Form.Range
-                    onChange={editHandler.edit}
-                    id={toolName}
-                    name={toolName}
-                    max={max}
-                    min={min}
-                    defaultValue={edit.present[toolName]}
-                    ref={(el) => (editToolsRanges.current[index] = el)}
-                  />
-                </React.Fragment>
-              );
-            })}
-
-            <Button
-              onClick={() => {
-                setRotate(rotate + 90);
-                canvasRef.current.style.rotate = `${rotate}deg`;
-                if (rotate === 360) {
-                  setRotate(90);
-                  return;
-                }
-                console.log(imageRef.current instanceof HTMLImageElement);
-                canvasRef.current.toBlob((blob) => {
-                  const url = URL.createObjectURL(blob);
-                  console.log(url);
-                });
+          <div className="w-full md:w-1/2 flex flex-col items-start justify-center gap-5 relative overflow-hidden h-full">
+            <div
+              className={`flex justify-evenly items-center w-full`}
+              style={{
+                marginBottom: "50px",
+                marginTop: "10px",
               }}
             >
-              Rotate
-            </Button>
-          </Col>
-        </Row>
-      </Container> */}
+              {otherTools.map((elem, index) => {
+                const { toolName, toolValue, toolValueUnit } = elem;
+                const { max, defaultValue } = toolValue;
+                return (
+                  <button
+                    type="button"
+                    key={index}
+                    onClick={() => {
+                      otherToolsHandler(max, defaultValue, toolValueUnit);
+                    }}
+                    id={toolName}
+                    className={Button_Style}
+                    disabled={ifImageSelected || loading}
+                  >
+                    {toolName.replace(/[^a-zA-Z0-9\s]/g, " ")}
+                    {toolValueUnit === "deg" ? (
+                      <TbRotate360 size={20} />
+                    ) : zoom > 1 ? (
+                      <MdOutlineZoomInMap size={20} />
+                    ) : (
+                      <MdOutlineZoomOutMap size={20} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="overflow-hidden">
+              <canvas
+                ref={canvasRef}
+                className="bg-black/20 shadow-2xl w-full h-auto max-h-[70vh] md:max-h-full"
+              />
+            </div>
+          </div>
+
+          <div className="w-full md:w-1/2 h-full">
+            <div className="w-full flex flex-wrap justify-evenly items-center gap-3">
+              <button
+                onClick={editHandler.undo}
+                className={Button_Style}
+                disabled={ifImageSelected || loading}
+                type="button"
+              >
+                Undo
+                <FaUndo size={20} />
+              </button>
+              <button
+                onClick={editHandler.redo}
+                className={Button_Style}
+                type="button"
+                disabled={ifImageSelected || loading}
+              >
+                Redo <FaRedo size={20} />
+              </button>
+            </div>
+
+            <form className="flex flex-wrap justify-between items-start gap-4 mt-5">
+              {editorsTools.map((elem, index) => {
+                const { toolName, toolValue } = elem;
+                const { min, max } = toolValue;
+                return (
+                  <React.Fragment key={index}>
+                    <label
+                      htmlFor={toolName}
+                      className="flex flex-col justify-center sm:justify-between items-start gap-2 text-sm md:text-lg text-Light-2 capitalize tracking-[2px] xl:w-75 w-full"
+                    >
+                      {toolName.replace(/[^a-zA-Z0-9\s]/g, " ")}
+                      <input
+                        type="range"
+                        className="p-2 w-full in-range:bg-amber-200"
+                        onChange={editHandler.edit}
+                        id={toolName}
+                        disabled={ifImageSelected || loading}
+                        name={toolName}
+                        max={max}
+                        min={min}
+                        defaultValue={edit.present[toolName]}
+                        ref={(el) => (editToolsRanges.current[index] = el)}
+                      />
+                      <div className="flex flex-row justify-between w-full">
+                        <span>{min}</span>
+                        <span>{edit.present[toolName]}</span>
+                        <span>{max}</span>
+                      </div>
+                    </label>
+                  </React.Fragment>
+                );
+              })}
+            </form>
+          </div>
+        </div>
+      </main>
     </Fragment>
   );
 };

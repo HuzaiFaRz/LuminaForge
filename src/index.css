@@ -17,27 +17,24 @@
   outline: none !important;
 }
 
-/* 8 colors to use for background instead of
-Pure Black
-Sable
-Charcoal Gray
-#0B1215
-#101720
-Obsidian
-Midnight Blue
-#0D1717
-#020D19
-Dark Slate Gray
-Rich Black
-#011222
-Deep Navy Blue
-Oil Black */
+input[type="range"] {
+  overflow: hidden;
+  appearance: none;
+  background-color: #f3e8df;
+}
 
-/* FONTS
-QUROUA
-GLITTEN
-BULGATTI
-FLORISHA
-BRUNEY
-ALLENOIRE
-SKVNTE */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  -webkit-appearance: none;
+  color: #57595b;
+  margin-top: -1px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  width: 10px;
+  -webkit-appearance: none;
+  height: 10px;
+  cursor: ew-resize;
+  background: #452829;
+  box-shadow: -80px 0 0 80px #57595b;
+}
