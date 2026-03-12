@@ -1,14 +1,9 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import { Button_Style, editorsTools, Image_Extension, otherTools } from ".";
-import { FaDownload, FaRedo, FaUndo } from "react-icons/fa";
+import { FaDownload, FaRedo, FaRegImage, FaUndo } from "react-icons/fa";
 import { BiImageAdd } from "react-icons/bi";
 import { TbRotate360 } from "react-icons/tb";
-import {
-  // MdOutlineCloudUpload,
-  MdOutlineZoomInMap,
-  MdOutlineZoomOutMap,
-} from "react-icons/md";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { MdOutlineZoomInMap, MdOutlineZoomOutMap } from "react-icons/md";
 
 const App = () => {
   const canvasRef = useRef(null);
@@ -222,7 +217,7 @@ const App = () => {
   }, [editImage]);
 
   let ifImageSelected =
-    editImage.pastedURL || editImage.selectedImage ? false : true;
+    editImage.pastedURL || editImage.selectedImage ? true : false;
 
   const otherToolsHandler = (max, defaultValue, toolValueUnit) => {
     if (toolValueUnit === "deg") {
@@ -302,6 +297,7 @@ const App = () => {
             <input
               type="url"
               id="Paste_URL"
+              disabled={loading}
               placeholder="Paste_URL"
               onChange={handlingURLImageInput}
               className="text-Light-1 tracking-wider text-lg border p-2 min-w-75 w-full"
@@ -347,7 +343,7 @@ const App = () => {
                     }}
                     id={toolName}
                     className={Button_Style}
-                    disabled={ifImageSelected || loading}
+                    disabled={!ifImageSelected || loading}
                   >
                     {toolName.replace(/[^a-zA-Z0-9\s]/g, " ")}
                     {toolValueUnit === "deg" ? (
@@ -361,7 +357,10 @@ const App = () => {
                 );
               })}
             </div>
-            <div className="overflow-hidden">
+            <div className="overflow-hidden relative flex justify-center items-center">
+              {!ifImageSelected && (
+                <FaRegImage size={100} className="absolute" color="grey" />
+              )}
               <canvas
                 ref={canvasRef}
                 className="bg-black/20 shadow-2xl w-full h-auto max-h-[70vh] md:max-h-full"
@@ -374,7 +373,7 @@ const App = () => {
               <button
                 onClick={editHandler.undo}
                 className={Button_Style}
-                disabled={ifImageSelected || loading}
+                disabled={!ifImageSelected || loading}
                 type="button"
               >
                 Undo
@@ -384,7 +383,7 @@ const App = () => {
                 onClick={editHandler.redo}
                 className={Button_Style}
                 type="button"
-                disabled={ifImageSelected || loading}
+                disabled={!ifImageSelected || loading}
               >
                 Redo <FaRedo size={20} />
               </button>
@@ -406,7 +405,7 @@ const App = () => {
                         className="p-2 w-full in-range:bg-amber-200"
                         onChange={editHandler.edit}
                         id={toolName}
-                        disabled={ifImageSelected || loading}
+                        disabled={!ifImageSelected || loading}
                         name={toolName}
                         max={max}
                         min={min}
